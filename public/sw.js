@@ -7,8 +7,19 @@ self.addEventListener('activate', () => {
 });
 
 
-self.addEventListener('fetch', function (event) {
-  var url = new URL(event.request.url);
+const cacheName = 'v1'
+
+const cacheClone = async (e) => {
+  const res = await fetch(e.request);
+  const resClone = res.clone();
+
+  const cache = await caches.open(cacheName);
+  await cache.put(e.request, resClone);
+  return res;
+};
+
+self.addEventListener('fetch', (event) => {
+  const url = new URL(event.request.url);
   const BASE_URL = url.origin + url.pathname;
 
   if (BASE_URL.includes("/api")) {
@@ -18,36 +29,14 @@ self.addEventListener('fetch', function (event) {
     console.log("[cache]", cache);
     console.log("[retry]", retry);
     console.log("[expires]", expires);
-    if(cache === 'true') {
-      event.respondWith(
-        caches.match(event.request)
-          .then(function (response) {
-            if (response) {
-              return response;
-            }
-            return fetch(event.request);
-          })
-      );
-      return;
-    }
-
 
     event.respondWith(
-      fetch(event.request)
-        .then(res => {
-          if (res.status === 200) {
-            const clonedRes = res.clone();
-            caches.open('sw-proxy-cache-v1')
-              .then(cache => {
-                cache.put(event.request, clonedRes);
-              });
-          }
-          
-          return res;
-        })
-        .catch(err => {
-          console.error('Error fetching from GitHub API: ', err);
-        })
+      cacheClone(event)
+        .catch(() => caches.match(event.request))
+        .then((res) => res)
     );
+    return;
   }
+
+  event.respondWith(fetch(event.request));
 });

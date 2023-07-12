@@ -1,8 +1,12 @@
 import React from "react";
 
 export default function Home() {
+  const [loading, setLoading] = React.useState(false);
+  const [data, setData] = React.useState(null);
   React.useEffect(() => {
     console.log("Hello, world!");
+
+    setLoading(true);
     fetch("/api/", {
       method: "GET",
       headers: {
@@ -13,12 +17,24 @@ export default function Home() {
       },
     })
       .then((respostaDoServidor) => {
+        setLoading(false);
         return respostaDoServidor.json();
       })
       .then((respostaCompleta) => {
         console.log(respostaCompleta);
+        setData(respostaCompleta);
       });
   }, []);
 
-  return <div>Welcome to Next.js!</div>
+  return (
+    <div>
+      Welcome to Next.js!
+      <p>
+        {loading && "Loading..."}
+      </p>
+      <pre>
+        <code>{JSON.stringify(data, null, 4)}</code>
+      </pre>
+    </div>
+  )
 }
